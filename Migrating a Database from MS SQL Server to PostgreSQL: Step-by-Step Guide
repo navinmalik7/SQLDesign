@@ -1,0 +1,158 @@
+Migrating a Database from MS SQL Server to PostgreSQL: Introduction
+
+Are you planning to migrate your MS SQL Server database to PostgreSQL? This guide will walk you through the entire process step by step, covering tables, stored procedures, functions, and views. We’ll also provide SQL scripts to help you extract schema details and migrate them smoothly.
+
+1. Understanding the Migration Process
+
+Migrating from SQL Server to PostgreSQL involves multiple steps:
+
+Schema Conversion – Convert tables, stored procedures, functions, and views.
+Data Migration – Transfer existing data.
+Code Adaptation – Adjust SQL syntax.
+Testing & Optimization – Verify the migration.
+Why Migrate from MS SQL Server to PostgreSQL?
+Cost-Effective: PostgreSQL is open-source and free, unlike MS SQL Server, which requires licensing.
+
+One of the biggest advantages of PostgreSQL is cost savings.
+
+Database	Licensing	Cost
+PostgreSQL	Open-source (Free)	$0
+MS SQL Server	Proprietary	Starts from $7,000 per core (Enterprise)
+
+🚀 PostgreSQL is 100% free with no hidden costs, while SQL Server has expensive licensing, especially for Enterprise Edition.
+
+Cross-Platform: PostgreSQL runs on multiple operating systems, including Linux, Windows, and macOS.
+Flexibility: PostgreSQL supports advanced features like JSON, full-text search, and custom data types.
+Community Support: PostgreSQL has a large, active community for troubleshooting and updates.
+
+PostgreSQL scales better for high-traffic applications, thanks to:
+
+MVCC (Multi-Version Concurrency Control) – Avoids locks and improves performance.
+Parallel Query Execution – PostgreSQL supports multiple CPU cores for queries.
+Partitioning & Indexing – Better partitioning support than SQL Server.
+
+PostgreSQL supports a wider range of data types, including:
+
+JSON & JSONB (for NoSQL-like operations)
+Array (Store multiple values in a single column)
+UUID (Universally Unique Identifiers)
+2. Extracting Schema Details from SQL Server
+
+Before migrating, we need to fetch schema details like tables, stored procedures, functions, and views.
+
+2.1 Fetch All Tables
+SELECT TABLE_NAME 
+FROM INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_TYPE = 'BASE TABLE';
+2.2 Fetch All Stored Procedures
+SELECT name AS Procedure_Name 
+FROM sys.procedures 
+ORDER BY name;
+2.3 Fetch All Functions
+SELECT name AS Function_Name 
+FROM sys.objects 
+WHERE type IN ('FN', 'IF', 'TF') 
+ORDER BY name;
+2.4 Fetch All Views
+SELECT TABLE_NAME AS View_Name 
+FROM INFORMATION_SCHEMA.VIEWS;
+3. Setting Up PostgreSQL
+
+Before migration, ensure PostgreSQL is installed. You can use:
+
+sudo apt update && sudo apt install postgresql postgresql-contrib
+
+Start the PostgreSQL service:
+
+sudo systemctl start postgresql
+
+Create a new database for migration:
+
+CREATE DATABASE S1_migrated;
+4. Converting Schema from SQL Server to PostgreSQL
+4.1 Table Migration
+
+SQL Server uses IDENTITY, whereas PostgreSQL uses SERIAL for auto-increment columns.
+
+SQL Server Table
+
+CREATE TABLE Employees (
+ID INT IDENTITY(1,1) PRIMARY KEY,
+Name NVARCHAR(100),
+Salary DECIMAL(10,2)
+);
+
+Converted PostgreSQL Table
+
+CREATE TABLE Employees (
+ID SERIAL PRIMARY KEY,
+Name TEXT,
+Salary NUMERIC(10,2)
+);
+4.2 Stored Procedures Migration
+
+SQL Server procedures use T-SQL, while PostgreSQL uses PL/pgSQL.
+
+SQL Server Stored Procedure
+
+CREATE PROCEDURE GetEmployeeData 
+AS 
+BEGIN
+SELECT * FROM Employees;
+END;
+
+Converted PostgreSQL Stored Procedure
+
+CREATE FUNCTION GetEmployeeData() RETURNS TABLE(ID INT, Name TEXT, Salary NUMERIC) 
+AS $$ 
+BEGIN 
+RETURN QUERY SELECT * FROM Employees;
+END; 
+$$ LANGUAGE plpgsql;
+4.3 Functions Migration
+
+SQL Server Function
+
+CREATE FUNCTION GetDiscount(@price DECIMAL) 
+RETURNS DECIMAL 
+AS 
+BEGIN 
+RETURN @price * 0.10; 
+END;
+
+Converted PostgreSQL Function
+
+CREATE FUNCTION GetDiscount(price NUMERIC) RETURNS NUMERIC 
+AS $$ 
+BEGIN 
+RETURN price * 0.10; 
+END; 
+$$ LANGUAGE plpgsql;
+4.4 Views Migration
+
+SQL Server View
+
+CREATE VIEW EmployeeView AS 
+SELECT ID, Name, Salary FROM Employees WHERE Salary > 50000;
+
+Converted PostgreSQL View
+
+CREATE VIEW EmployeeView AS
+SELECT ID, Name, Salary FROM Employees WHERE Salary > 50000;
+
+5. Data Migration
+
+Use BCP (Bulk Copy Program) or CSV files to extract data from SQL Server:
+
+bcp S1.dbo.Employees out Employees.csv -c -t, -T -S SERVER_NAME
+
+Import data into PostgreSQL:
+
+COPY Employees(ID, Name, Salary) FROM '/path/to/Employees.csv' DELIMITER ',' CSV HEADER;
+6. Updating Application & Final Deployment
+Update application connection strings to PostgreSQL.
+Modify SQL queries to match PostgreSQL syntax.
+Deploy to production and monitor performance.
+Final Thoughts
+
+Migrating from SQL Server to PostgreSQL requires careful planning, but with the right approach, it becomes straightforward. PostgreSQL provides a powerful, cost-effective alternative with advanced features.
